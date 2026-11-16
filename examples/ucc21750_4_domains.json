@@ -1,0 +1,82 @@
+{
+  "vin_min_v": 10,
+  "vin_max_v": 30,
+  "frequency_khz": 120,
+  "duty_max": 0.42,
+  "efficiency": 0.8,
+  "vref_target_v": 20,
+  "max_b_t": 0.16,
+  "current_density_a_mm2": 4,
+  "window_utilization": 0.35,
+  "window_reserved": 0.1,
+  "min_demag_margin": 0.1,
+  "gap_min_mm": 0.05,
+  "gap_max_mm": 1.5,
+  "winding_temp_c": 80,
+  "core": {
+    "name": "ETD39",
+    "ae_mm2": 125,
+    "aw_mm2": 178,
+    "le_mm": 92.2,
+    "mur": 1600,
+    "mlt_mm": 74
+  },
+  "outputs": [
+    {
+      "name": "+18 V Upper A",
+      "group": "Upper A",
+      "voltage_v": 18,
+      "current_a": 0.08,
+      "diode_v": 0.7
+    },
+    {
+      "name": "-11 V Upper A",
+      "group": "Upper A",
+      "voltage_v": -11,
+      "current_a": 0.03,
+      "diode_v": 0.7
+    },
+    {
+      "name": "+18 V Upper B",
+      "group": "Upper B",
+      "voltage_v": 18,
+      "current_a": 0.08,
+      "diode_v": 0.7
+    },
+    {
+      "name": "-11 V Upper B",
+      "group": "Upper B",
+      "voltage_v": -11,
+      "current_a": 0.03,
+      "diode_v": 0.7
+    },
+    {
+      "name": "+18 V Upper C",
+      "group": "Upper C",
+      "voltage_v": 18,
+      "current_a": 0.08,
+      "diode_v": 0.7
+    },
+    {
+      "name": "-11 V Upper C",
+      "group": "Upper C",
+      "voltage_v": -11,
+      "current_a": 0.03,
+      "diode_v": 0.7
+    },
+    {
+      "name": "+18 V Lower",
+      "group": "Lower",
+      "voltage_v": 18,
+      "current_a": 0.08,
+      "diode_v": 0.7
+    },
+    {
+      "name": "-11 V Lower",
+      "group": "Lower",
+      "voltage_v": -11,
+      "current_a": 0.03,
+      "diode_v": 0.7
+    }
+  ]
+}
