@@ -186,6 +186,9 @@ def main_gui():
 
             self.text = make_text(calculations)
             self.advice_text = make_text(diagnostics)
+            self.advice_text.tag_configure("error", foreground="#a32222")
+            self.advice_text.tag_configure("warning", foreground="#a56d05")
+            self.advice_text.tag_configure("info", foreground="#315882")
 
             geometry = ttk.LabelFrame(
                 placement, text="Каркас — свои размеры по чертежу или измерению, мм", padding=8)
@@ -401,7 +404,11 @@ def main_gui():
 
         def show_advice(self, notes):
             self.advice_text.delete("1.0", "end")
-            self.advice_text.insert("1.0", advice_report(notes))
+            for line in advice_report(notes).splitlines(keepends=True):
+                tag = ("error" if "[ERROR]" in line else
+                       "warning" if "[WARNING]" in line else
+                       "info" if "[INFO]" in line else None)
+                self.advice_text.insert("end", line, tag)
 
         def calculate(self):
             s = self.read_settings()
@@ -532,7 +539,7 @@ def main():
         result = (compare_cores(s) if args.compare_cores
                   else report(s, candidates))
         if args.advice:
-            result += "\n\n" + advice_report(inspect_design(s, candidates))
+            result += "\n\n" + advice_report(inspect_design(s, None if args.compare_cores else candidates))
         if args.out:
             Path(args.out).write_text(result, encoding="utf-8-sig")
         else:
