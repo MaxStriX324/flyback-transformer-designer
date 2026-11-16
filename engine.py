@@ -48,11 +48,11 @@ class Output:
 
 
 def demo_outputs() -> list[Output]:
-    """Demonstration pre-regulator voltages, not guaranteed UCC21750 loads."""
+    """Generic illustrative outputs; adjust before using in any actual design."""
     return [
-        Output(f"{rail} {group}", group, voltage, current)
-        for group in ("Upper A", "Upper B", "Upper C", "Lower")
-        for rail, voltage, current in (("+18 V", 18.0, 0.08), ("-11 V", -11.0, 0.03))
+        Output("Output +12V", "Group A", 12.0, 0.2, 0.7),
+        Output("Output -12V", "Group A", -12.0, 0.15, 0.7),
+        Output("Output +5V", "Group B", 5.0, 0.3, 0.5),
     ]
 
 
