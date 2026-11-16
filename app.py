@@ -229,6 +229,10 @@ def main_gui():
             for key, entry in self.core_entries.items():
                 self._put(entry, getattr(settings.core, key))
             self.outputs = [Output(**asdict(o)) for o in settings.outputs]
+            self.last_candidates = []
+            for key, value in (settings.layout_options or {}).items():
+                if key in self.bobbin_fields:
+                    self._put(self.bobbin_fields[key], value)
             self.refresh_outputs()
 
         def refresh_outputs(self, selected=None):
@@ -305,7 +309,9 @@ def main_gui():
                             for key, entry in self.core_entries.items()}
                 core = Core(
                     name=self.core_name.get().strip() or "Custom", **geometry)
-                s = Settings(**params, core=core, outputs=self.outputs[:])
+                s = Settings(**params, core=core, outputs=self.outputs[:],
+                             layout_options={key: entry.get()
+                                for key, entry in self.bobbin_fields.items()})
                 return s
             except (ValueError, TypeError) as exc:
                 messagebox.showerror("Параметры", str(exc))
