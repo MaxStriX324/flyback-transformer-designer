@@ -74,12 +74,15 @@ class Settings:
     winding_temp_c: float = 80.0
     core: Core | None = None
     outputs: list[Output] | None = None
+    layout_options: dict[str, str] | None = None  # UI bobbin inputs; separate from magnetics
 
     def __post_init__(self) -> None:
         if self.core is None:
             self.core = replace(CORES["ETD39"])
         if self.outputs is None:
             self.outputs = demo_outputs()
+        if self.layout_options is None:
+            self.layout_options = {}
 
 
 def validate(s: Settings) -> None:
