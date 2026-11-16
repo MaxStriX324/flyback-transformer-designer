@@ -1,0 +1,205 @@
+{
+  "vin_min_v": 10,
+  "vin_max_v": 30,
+  "frequency_khz": 120,
+  "duty_max": 0.42,
+  "efficiency": 0.8,
+  "vref_target_v": 20,
+  "max_b_t": 0.16,
+  "current_density_a_mm2": 4,
+  "window_utilization": 0.35,
+  "window_reserved": 0.1,
+  "min_demag_margin": 0.1,
+  "gap_min_mm": 0.05,
+  "gap_max_mm": 1.5,
+  "winding_temp_c": 80,
+  "core": {
+    "name": "ETD39",
+    "ae_mm2": 125,
+    "aw_mm2": 178,
+    "le_mm": 92.2,
+    "mur": 1600,
+    "mlt_mm": 74
+  },
+  "outputs": [
+    {
+      "name": "Output 01",
+      "group": "Group 1",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 02",
+      "group": "Group 1",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 03",
+      "group": "Group 1",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 04",
+      "group": "Group 1",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 05",
+      "group": "Group 2",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 06",
+      "group": "Group 2",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 07",
+      "group": "Group 2",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 08",
+      "group": "Group 2",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 09",
+      "group": "Group 3",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 10",
+      "group": "Group 3",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 11",
+      "group": "Group 3",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 12",
+      "group": "Group 3",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 13",
+      "group": "Group 4",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 14",
+      "group": "Group 4",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 15",
+      "group": "Group 4",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 16",
+      "group": "Group 4",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 17",
+      "group": "Group 5",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 18",
+      "group": "Group 5",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 19",
+      "group": "Group 5",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 20",
+      "group": "Group 5",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 21",
+      "group": "Group 6",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 22",
+      "group": "Group 6",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 23",
+      "group": "Group 6",
+      "voltage_v": 5,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    },
+    {
+      "name": "Output 24",
+      "group": "Group 6",
+      "voltage_v": 12,
+      "current_a": 0.015,
+      "diode_v": 0.7
+    }
+  ],
+  "layout_options": {
+    "name": "Example bobbin (verify datasheet)",
+    "winding_width_mm": "30",
+    "mean_turn_length_mm": "70",
+    "available_radial_mm": "",
+    "end_margin_mm": "1.5",
+    "interlayer_tape_mm": "0.05",
+    "interwinding_tape_mm": "0.07",
+    "intergroup_tape_mm": "0.15",
+    "radial_reserve_mm": "0.5"
+  }
+}
