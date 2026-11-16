@@ -12,12 +12,12 @@ from engine import Core, Output, Settings, load_project, optimize, save_project,
 
 
 class TransformerTests(unittest.TestCase):
-    def test_default_eight_windings(self):
+    def test_generic_default_windings(self):
         s = Settings()
         results = optimize(s)
         self.assertTrue(results)
         c = results[0]
-        self.assertEqual(len(c.windings), 8)
+        self.assertEqual(len(c.windings), 3)
         self.assertLessEqual(c.bpk_t, s.max_b_t)
         self.assertLessEqual(c.used_window_fraction, s.window_utilization)
         self.assertGreaterEqual(c.idle_fraction, s.min_demag_margin)
@@ -62,7 +62,7 @@ class TransformerTests(unittest.TestCase):
             for n in range(18))
         result = optimize(s)
         self.assertTrue(result)
-        self.assertEqual(len(result[0].windings), 26)
+        self.assertEqual(len(result[0].windings), 21)
 
     def test_tiny_core_rejected(self):
         tiny = Core("Impossible", 1e-6, 1e-6, 100, 1200, 30)
