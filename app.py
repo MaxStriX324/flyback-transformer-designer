@@ -4,6 +4,9 @@ from dataclasses import asdict
 from pathlib import Path
 import sys
 
+from advisor import advice_report, inspect_design, inspect_settings
+from winding_layout import Bobbin, Packing, calculate_layout, from_candidate, layout_report
+
 from engine import (
     CORES, Core, Output, Settings, compare_cores,
     load_project, optimize, report, save_project, validate,
@@ -41,13 +44,14 @@ def main_gui():
     class Designer(tk.Tk):
         def __init__(self):
             super().__init__()
-            self.title("Flyback Transformer Designer — многовыводный DCM / v0.1")
-            self.geometry("1460x950")
-            self.minsize(1100, 730)
+            self.title("Flyback Transformer Designer — универсальный многообмоточный расчёт / v0.2")
+            self.geometry("1540x930")
+            self.minsize(1160, 760)
             self.entries = {}
             self.core_entries = {}
             self.output_entries = {}
             self.outputs = []
+            self.last_candidates = []
             self._build()
             self.set_project(Settings())
             self.calculate()
@@ -99,7 +103,7 @@ def main_gui():
             columns = ("group", "name", "voltage", "current", "diode")
             self.tree = ttk.Treeview(
                 tree_box, columns=columns, show="headings",
-                height=9, selectmode="browse",
+                height=11, selectmode="browse",
             )
             for key, label, width in (
                 ("group", "Изолированная группа", 175),
@@ -136,6 +140,9 @@ def main_gui():
                 ("Добавить", self.add_output),
                 ("Обновить", self.update_output),
                 ("Удалить", self.delete_output),
+                ("Копировать", self.duplicate_output),
+                ("Выше", self.move_up),
+                ("Ниже", self.move_down),
                 ("Сделать опорной", self.make_main),
             ):
                 ttk.Button(editor, text=caption, command=action).pack(
@@ -146,6 +153,7 @@ def main_gui():
             for caption, action in (
                 ("Рассчитать варианты", self.calculate),
                 ("Сравнить сердечники", self.compare),
+                ("Новый проект", self.new_project),
                 ("Сохранить JSON", self.save),
                 ("Открыть JSON", self.load),
                 ("Экспорт TXT", self.export),
@@ -153,16 +161,60 @@ def main_gui():
                 ttk.Button(actions, text=caption, command=action).pack(
                     side="left", padx=4)
 
-            result = ttk.LabelFrame(
-                self, text="Расчётные варианты / обмоточные данные", padding=6)
-            result.pack(fill="both", expand=True, padx=14, pady=(4, 12))
-            scroll = ttk.Scrollbar(result)
-            scroll.pack(side="right", fill="y")
-            self.text = tk.Text(
-                result, font=("Consolas", 10), wrap="none",
-                yscrollcommand=scroll.set)
-            self.text.pack(fill="both", expand=True)
-            scroll.configure(command=self.text.yview)
+            self.notebook = ttk.Notebook(self)
+            self.notebook.pack(fill="both", expand=True, padx=14, pady=(4, 12))
+            calculations = ttk.Frame(self.notebook)
+            diagnostics = ttk.Frame(self.notebook)
+            placement = ttk.Frame(self.notebook)
+            self.notebook.add(calculations, text="Результаты / обмоточные данные")
+            self.notebook.add(diagnostics, text="Диагностика и рекомендации")
+            self.notebook.add(placement, text="Укладка на каркасе")
+
+            def make_text(parent):
+                container = ttk.Frame(parent, padding=5)
+                container.pack(fill="both", expand=True)
+                bar = ttk.Scrollbar(container)
+                bar.pack(side="right", fill="y")
+                content = tk.Text(container, font=("Consolas", 10), wrap="none",
+                                  yscrollcommand=bar.set)
+                content.pack(fill="both", expand=True)
+                bar.configure(command=content.yview)
+                return content
+
+            self.text = make_text(calculations)
+            self.advice_text = make_text(diagnostics)
+
+            geometry = ttk.LabelFrame(
+                placement, text="Каркас — свои размеры по чертежу или измерению, мм", padding=8)
+            geometry.pack(fill="x", padx=7, pady=6)
+            self.bobbin_fields = {}
+            dims = (
+                ("name", "Название каркаса", "User-defined bobbin"),
+                ("winding_width_mm", "Полная ширина намотки", "30.0"),
+                ("mean_turn_length_mm", "Средняя длина витка MLT", "70.0"),
+                ("available_radial_mm", "Радиальное место (пусто = неизвестно)", ""),
+                ("end_margin_mm", "Поле по краям (с каждой стороны)", "1.5"),
+                ("interlayer_tape_mm", "Изоляция между слоями", "0.05"),
+                ("interwinding_tape_mm", "Изоляция между обмотками", "0.07"),
+                ("intergroup_tape_mm", "Изоляция между группами", "0.15"),
+                ("radial_reserve_mm", "Радиальный резерв", "0.5"),
+            )
+            for i, (key, title, value) in enumerate(dims):
+                col = i % 3
+                row = i // 3
+                cell = ttk.Frame(geometry)
+                cell.grid(row=row, column=col, sticky="ew", padx=8, pady=3)
+                ttk.Label(cell, text=title).pack(anchor="w")
+                field = ttk.Entry(cell, width=26)
+                field.insert(0, value)
+                field.pack(fill="x")
+                self.bobbin_fields[key] = field
+            for col in range(3):
+                geometry.columnconfigure(col, weight=1)
+            ttk.Button(geometry, text="Проверить укладку обмоток",
+                       command=self.check_layout).grid(
+                row=3, column=0, columnspan=3, sticky="w", padx=8, pady=6)
+            self.layout_text = make_text(placement)
 
         def change_core(self, event=None):
             core = CORES.get(self.core_name.get())
@@ -254,30 +306,116 @@ def main_gui():
                 core = Core(
                     name=self.core_name.get().strip() or "Custom", **geometry)
                 s = Settings(**params, core=core, outputs=self.outputs[:])
-                validate(s)
                 return s
             except (ValueError, TypeError) as exc:
                 messagebox.showerror("Параметры", str(exc))
                 return None
 
+        def new_project(self):
+            self.set_project(Settings(outputs=[
+                Output("Output 1", "Group 1", 12.0, 0.2, 0.7)]))
+            self.calculate()
+
+        def duplicate_output(self):
+            index = self.selected_index()
+            if index is None:
+                return
+            source = self.outputs[index]
+            duplicate = Output(source.name + " copy", source.group,
+                               source.voltage_v, source.current_a, source.diode_v)
+            self.outputs.insert(index + 1, duplicate)
+            self.refresh_outputs(index + 1)
+
+        def move_up(self):
+            index = self.selected_index()
+            if index is not None and index > 0:
+                self.outputs[index-1], self.outputs[index] = (
+                    self.outputs[index], self.outputs[index-1])
+                self.refresh_outputs(index-1)
+
+        def move_down(self):
+            index = self.selected_index()
+            if index is not None and index + 1 < len(self.outputs):
+                self.outputs[index+1], self.outputs[index] = (
+                    self.outputs[index], self.outputs[index+1])
+                self.refresh_outputs(index+1)
+
         def show_result(self, content):
             self.text.delete("1.0", "end")
             self.text.insert("1.0", content)
 
+        def show_advice(self, notes):
+            self.advice_text.delete("1.0", "end")
+            self.advice_text.insert("1.0", advice_report(notes))
+
         def calculate(self):
             s = self.read_settings()
-            if s is not None:
-                try:
-                    self.show_result(report(s, optimize(s, top=5)))
-                except Exception as exc:
-                    messagebox.showerror("Расчёт", str(exc))
+            if s is None:
+                return
+            try:
+                basic_notes = inspect_settings(s)
+                if any(a.level == "ERROR" for a in basic_notes):
+                    self.last_candidates = []
+                    self.show_result("Расчёт не выполнен: исправьте входные данные.\n"
+                                     "Перейдите на вкладку «Диагностика и рекомендации».")
+                    self.show_advice(basic_notes)
+                    self.notebook.select(1)
+                    return
+                self.last_candidates = optimize(s, top=5)
+                self.show_result(report(s, self.last_candidates))
+                self.show_advice(inspect_design(s, self.last_candidates))
+                if not self.last_candidates:
+                    self.notebook.select(1)
+            except Exception as exc:
+                messagebox.showerror("Расчёт", str(exc))
+
+        def read_bobbin(self):
+            fields = self.bobbin_fields
+            def number(key):
+                return float(fields[key].get().replace(",", "."))
+            name = fields["name"].get().strip()
+            radial = fields["available_radial_mm"].get().strip()
+            bobbin = Bobbin(name=name,
+                winding_width_mm=number("winding_width_mm"),
+                mean_turn_length_mm=number("mean_turn_length_mm"),
+                available_radial_mm=float(radial.replace(",", ".")) if radial else None)
+            packing = Packing(end_margin_mm=number("end_margin_mm"),
+                interlayer_tape_mm=number("interlayer_tape_mm"),
+                interwinding_tape_mm=number("interwinding_tape_mm"),
+                intergroup_tape_mm=number("intergroup_tape_mm"),
+                radial_reserve_mm=number("radial_reserve_mm"))
+            return bobbin, packing
+
+        def check_layout(self):
+            if not self.last_candidates:
+                self.layout_text.delete("1.0", "end")
+                self.layout_text.insert("1.0",
+                    "Сначала получите допустимый предварительный расчёт.")
+                return
+            try:
+                bobbin, packing = self.read_bobbin()
+                layout = calculate_layout(
+                    from_candidate(self.last_candidates[0]), bobbin, packing)
+                self.layout_text.delete("1.0", "end")
+                self.layout_text.insert("1.0", layout_report(layout))
+                if layout.fits is False:
+                    self.advice_text.insert("end",
+                        "\n[WARNING] Намотка не помещается по радиальному размеру.\n"
+                        "Выберите больший каркас, измените провод или "
+                        "геометрию укладки. Проверьте изоляцию отдельно.\n")
+            except ValueError as exc:
+                self.layout_text.delete("1.0", "end")
+                self.layout_text.insert("1.0", "Ошибка геометрии: " + str(exc))
 
         def compare(self):
             s = self.read_settings()
             if s is not None:
                 try:
                     self.show_result(compare_cores(s))
+                    self.notebook.select(0)
                 except Exception as exc:
+                    self.show_advice(inspect_settings(s))
+                    self.notebook.select(1)
                     messagebox.showerror("Сравнение", str(exc))
 
         def save(self):
@@ -319,14 +457,19 @@ def main():
     parser.add_argument("--out", metavar="REPORT.txt",
                         help="Save plain-text report")
     parser.add_argument("--demo", action="store_true",
-                        help="Run bundled default 8-output demo")
+                        help="Run generic example project")
+    parser.add_argument("--advice", action="store_true",
+                        help="Append actionable diagnostic recommendations")
     parser.add_argument("--compare-cores", action="store_true",
                         help="Run geometric core comparison")
     args = parser.parse_args()
-    if args.cli or args.demo or args.compare_cores:
+    if args.cli or args.demo or args.compare_cores or args.advice:
         s = load_project(args.cli) if args.cli else Settings()
+        candidates = [] if args.compare_cores else optimize(s)
         result = (compare_cores(s) if args.compare_cores
-                  else report(s, optimize(s)))
+                  else report(s, candidates))
+        if args.advice:
+            result += "\n\n" + advice_report(inspect_design(s, candidates))
         if args.out:
             Path(args.out).write_text(result, encoding="utf-8-sig")
         else:
