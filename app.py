@@ -1,5 +1,6 @@
 """Tkinter GUI and CLI for the preliminary multi-output flyback calculator."""
 import argparse
+import csv
 from dataclasses import asdict
 from pathlib import Path
 import sys
@@ -144,6 +145,8 @@ def main_gui():
                 ("Выше", self.move_up),
                 ("Ниже", self.move_down),
                 ("Сделать опорной", self.make_main),
+                ("Импорт CSV", self.import_csv),
+                ("Экспорт CSV", self.export_csv),
             ):
                 ttk.Button(editor, text=caption, command=action).pack(
                     side="left", padx=3, pady=13)
@@ -317,6 +320,52 @@ def main_gui():
                 messagebox.showerror("Параметры", str(exc))
                 return None
 
+        def import_csv(self):
+            path = filedialog.askopenfilename(filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            try:
+                with open(path, "r", encoding="utf-8-sig", newline="") as file:
+                    sample = file.read(4096)
+                    file.seek(0)
+                    delimiter = ";" if sample.count(";") > sample.count(",") else ","
+                    reader = csv.DictReader(file, delimiter=delimiter)
+                    required = {"name", "group", "voltage_v", "current_a"}
+                    if not reader.fieldnames or not required.issubset(reader.fieldnames):
+                        raise ValueError("Нужны столбцы name,group,voltage_v,current_a; "
+                                         "diode_v необязателен")
+                    rows = []
+                    for line, item in enumerate(reader, 2):
+                        if not any(item.values()):
+                            continue
+                        voltage = float(item["voltage_v"].replace(",", "."))
+                        current = float(item["current_a"].replace(",", "."))
+                        diode = float((item.get("diode_v") or "0.7").replace(",", "."))
+                        out = Output(item["name"].strip(), item["group"].strip(),
+                                     voltage, current, diode)
+                        if not out.name or not out.group or voltage == 0 \
+                                or current <= 0 or diode < 0:
+                            raise ValueError(f"Строка {line}: некорректная обмотка")
+                        rows.append(out)
+                if not rows:
+                    raise ValueError("В CSV нет строк с обмотками")
+                self.outputs.extend(rows)
+                self.refresh_outputs(len(self.outputs)-len(rows))
+                messagebox.showinfo("Импорт", f"Добавлено обмоток: {len(rows)}")
+            except (OSError, KeyError, ValueError, AttributeError) as exc:
+                messagebox.showerror("CSV", str(exc))
+
+        def export_csv(self):
+            path = filedialog.asksaveasfilename(
+                defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if path:
+                with open(path, "w", encoding="utf-8-sig", newline="") as file:
+                    writer = csv.writer(file, delimiter=";")
+                    writer.writerow(("name", "group", "voltage_v", "current_a", "diode_v"))
+                    for o in self.outputs:
+                        writer.writerow((o.name, o.group, o.voltage_v,
+                                         o.current_a, o.diode_v))
+
         def new_project(self):
             self.set_project(Settings(outputs=[
                 Output("Output 1", "Group 1", 12.0, 0.2, 0.7)]))
@@ -393,15 +442,23 @@ def main_gui():
             return bobbin, packing
 
         def check_layout(self):
-            if not self.last_candidates:
-                self.layout_text.delete("1.0", "end")
-                self.layout_text.insert("1.0",
-                    "Сначала получите допустимый предварительный расчёт.")
+            s = self.read_settings()
+            if s is None:
                 return
             try:
+                candidates = optimize(s, top=1)
+                if not candidates:
+                    self.last_candidates = []
+                    self.layout_text.delete("1.0", "end")
+                    self.layout_text.insert("1.0",
+                        "В заданных электрических ограничениях вариант не найден.\n"
+                        "См. вкладку «Диагностика и рекомендации».")
+                    self.show_advice(inspect_design(s, []))
+                    return
+                self.last_candidates = candidates
                 bobbin, packing = self.read_bobbin()
                 layout = calculate_layout(
-                    from_candidate(self.last_candidates[0]), bobbin, packing)
+                    from_candidate(candidates[0]), bobbin, packing)
                 self.layout_text.delete("1.0", "end")
                 self.layout_text.insert("1.0", layout_report(layout))
                 if layout.fits is False:
